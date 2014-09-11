@@ -1,0 +1,50 @@
+# Problemset Example2
+
+  
+```{r include=FALSE}
+
+ps.dir =  'D:/libraries/RTutor2/RTutor2/vignettes/problemsets' # set to the folder in which this file is stored
+ps.file = 'Example2.Rmd' # set to the name of this file
+user.name = 'ENTER A USER NAME HERE' # set to your user name
+
+library(RTutor2)
+check.problem.set('Example2', ps.dir, ps.file, user.name=user.name, reset=FALSE)
+
+# To check your solution in RStudio save (Ctrl-S) and then run all chunks (Ctrl-Alt-R)
+```
+Name: `r user.name`
+
+
+Example of an RTutor interactive Problemset
+Author:  Sebastian Kranz
+Date:    12.06.2014
+
+Adapt the working directory below and press Ctrl-Alt-R (run all chunks). This creates the problem set files and the sample solution from this solution file.
+
+## Exercise 1 -- Summary statistics
+
+info("random numbers") # Run this line (Strg-Enter) to show info
+
+a) We often want to compute some summary statistic of a vector.
+For example:
+```{r "1 a) 1"}
+x = 10:20
+# Computing the sum of x
+sum(x)
+```
+
+Now compute the mean of x.
+```{r "1 a) 2"}
+
+```
+
+
+
+## Exercise 2 -- Computing with vectors
+
+a) Let y be a vector that contains the squared elements of x. Show y
+```{r "2 a)"}
+
+```
+
+
