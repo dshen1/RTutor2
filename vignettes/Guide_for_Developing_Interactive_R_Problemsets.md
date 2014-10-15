@@ -385,16 +385,16 @@ Info blocks are declared outside of code chunks and start with `#< info` and end
 
 ```
   #< info "useful functions for numeric vectors"
-  Here are examples for useful R functions
-  ```{r "1 "}
-  max(c(1,5,2)) # returns maximum
-  min(c(1,5,2)) # returns minimum
-  
-  sum(c(1,5,2,NA), na.rm=TRUE) # returns sum of all numbers, ignore NA
-  cumsum(c(1,5,2)) # returns cummulated sum
-  diff(c(1,5,2)) # returns the vector of differences
-  ```
-  #>
+    Here are examples for useful R functions
+    ```{r "1 "}
+    max(c(1,5,2)) # returns maximum
+    min(c(1,5,2)) # returns minimum
+    
+    sum(c(1,5,2,NA), na.rm=TRUE) # returns sum of all numbers, ignore NA
+    cumsum(c(1,5,2)) # returns cummulated sum
+    diff(c(1,5,2)) # returns the vector of differences
+    ``` 
+  #>  
 ```
 An info block can contain normal text and also code chunks. When the problem set is created all info blocks will be compiled via the knitr and markdown packages to html text.
 Since info blocks will be complied already when the problem set is created, you cannot used any variables that are declared outside the info block in the info block code chunks.  
@@ -562,3 +562,9 @@ The default test `check.assign` would only pass if the student would set `T=100`
 TO DO:
 
 Add more examples
+
+
+setwd("D:/libraries/RTutor2/RTutor2/vignettes")
+markdownToHTML("Guide_for_Developing_Interactive_R_Problemsets.md",
+               output="Guide_for_Developing_Interactive_R_Problemsets.html")
+
