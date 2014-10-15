@@ -222,8 +222,8 @@ make.chunk.input.ui = function(chunk.ind, theme="textmate", height=NULL, code.li
 
   )
   edit.row = fluidRow(
-    aceEditor(nali$editor, code, mode="r",theme=theme, height=height, fontSize=13,keyId = keys, wordWrap=TRUE, debounce=10),
-    aceEditor(nali$console, "", mode="r",theme="clouds", height=console.height, fontSize=13,keyId = NULL, wordWrap=TRUE, debounce=10, showLineNumbers=FALSE,highlightActiveLine=FALSE)
+    aceEditor(nali$editor, code, mode="r",theme=theme, height=height, fontSize=13,hotkeys = keys, wordWrap=TRUE, debounce=10),
+    aceEditor(nali$console, "", mode="r",theme="clouds", height=console.height, fontSize=13,hotkeys = NULL, wordWrap=TRUE, debounce=10, showLineNumbers=FALSE,highlightActiveLine=FALSE)
   )
   
   fluidRow(
