@@ -26,8 +26,8 @@ new.stud.env = function(chunk.ind, ps = get.ps()) {
   #stud.env = 
   stud.env$..chunk.ind <- chunk.ind
   class(stud.env) = c("StudEnv",class(stud.env))
-  cat("\nnew.")
-  print(stud.env)
+  #cat("\nnew.")
+  #print(stud.env)
   stud.env
 }
 
@@ -52,8 +52,8 @@ copy.stud.env = function(env, new.chunk.ind=env$..chunk.ind, ps = get.ps()) {
   #parent.env(stud.env) <- parent.env(globalenv())
   stud.env$..chunk.ind = new.chunk.ind
   class(stud.env) = c("StudEnv",class(stud.env))
-  cat(" copy.stud.env: ")
-  print(stud.env)
+  #cat(" copy.stud.env: ")
+  #print(stud.env)
   stud.env
 }
 

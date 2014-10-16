@@ -285,7 +285,9 @@ hint.for.call = function(call, ps=get.ps(), env = ps$stud.env, stud.expr.li = ps
         display("Hmm, it actually looks like you have a correct command. It is strange that the test did not pass...")
     }
   }  else if (cde$type == "math") {
-    display("You have to enter the correct mathematical formula... Ok, I agree that this automatically generated hint may not be super useful.")
+    restore.point("math.fail")
+    hint.str = scramble.text(deparse(call),"?",0.5, keep.char=" ")
+    display("You have to a correct formula... Here is a scrambled version of my solution with some characters being hidden by ?:\n\n  ", hint.str)
   }  else if (cde$type == "var") {
     if (!from.assign)
       display("You shall simply show the variable ",cde$na, " by typing the variable name in your code.")
@@ -297,6 +299,16 @@ hint.for.call = function(call, ps=get.ps(), env = ps$stud.env, stud.expr.li = ps
 
 }
 
+scramble.text = function(txt, scramble.char="?", share=0.5, keep.char=" ") {
+  vec = strsplit(txt, "")[[1]]
+  
+  keep = which(!(vec %in% keep.char))
+  
+  n = length(keep)
+  ind = sample.int(n,round(n*share), replace=FALSE)
+  vec[keep[ind]] = scramble.char
+  paste0(vec, collapse="")  
+}
 
 #' Default hint for an assignment
 #' @export
@@ -350,12 +362,12 @@ hint.for.compute = function(expr, hints.txt=NULL,var="", ps=get.ps(), env = ps$s
       error = function(e) {ex$failure.message <- as.character(e)}
     )
     if (!ret) {
-      message = ex$failure.message
-      display(ex$failure.message)
+      message = ps$failure.message
+      display(ps$failure.message)
       hint.for.assign(expr.object=e)
       break
     } else {
-      message = ex$success.message
+      message = ps$success.message
       display(message)      
     }
   }

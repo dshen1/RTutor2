@@ -56,8 +56,9 @@ init.ps = function(ps.name,dir=getwd(), stud.short.file = paste0(ps.name,".Rmd")
   
   edt = rps$edt
   edt$ex.solved = FALSE
-  edt$ex.final.env = replicate(NROW(edt),new.env(parent=ps$ps.baseenv
-), simplify=FALSE)
+  #env.li  = replicate(NROW(edt),new.env(parent=ps$ps.baseenv), simplify=FALSE)
+  env.li  = replicate(NROW(edt),new.stud.env(chunk.ind=0), simplify=FALSE)
+  edt$ex.final.env = env.li
   ps$edt = edt
 
   

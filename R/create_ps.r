@@ -28,10 +28,14 @@ create.ps = function(sol.file, ps.name=NULL, user.name= "ENTER A USER NAME HERE"
   txt = readLines(sol.file)
   txt =  name.rmd.chunks(txt=txt)
   te = parse.sol.rmd(txt=txt)
+  
   if (!is.null(ps.name))
     te$ps.name = ps.name
-  write.sample.solution(te=te, header=header,footer=footer, user.name=sol.user.name, ps.dir=dir)
-  task.txt = write.empty.ps(te=te,  header=header,footer=footer, user.name=user.name, ps.dir=dir)
+  
+  write.sample.solution(te=te, header=header,footer=footer,
+                        user.name=sol.user.name, ps.dir=dir)
+  task.txt = write.empty.ps(te=te,  header=header,footer=footer,
+                            user.name=user.name, ps.dir=dir)
   rps = te.to.rps(te=te)
   
   # Store information about empty problem set in order to easily export
@@ -114,6 +118,8 @@ write.sample.solution = function(file = paste0(ps.name,"_sample_solution.Rmd"), 
 }
 
 write.empty.ps = function(file = paste0(te$ps.name,".Rmd"), task.txt=te$task.txt,ps.name=te$ps.name, te,...) {
+  
+  
   task.txt = include.ps.extra.lines(task.txt, ps.file=file, ps.name=ps.name,te=te,...)
   writeLines(task.txt, file)
   invisible(task.txt)
@@ -182,7 +188,11 @@ te.to.rps = function(te) {
   if (length(adt)==0)
     adt = data.table(chunk.name=character(0), award.name=character(0))
   
+  # Beware: left_join orders by chunk.name!
   cdt = left_join(cdt, dplyr::select(adt, chunk.name, award.name),by="chunk.name")
+  # restore original order
+  ord = order(cdt$chunk.ps.ind)
+  cdt = cdt[ord,]
   rps$cdt = cdt
   rps$awards = te$awards
   
@@ -440,12 +450,7 @@ add.te.block = function(te) {
      ck$test.txt[length(ck$test.txt)] <- test.txt
   } else if (type == "compute") {
     var = args
-    hint.txt = hint.code.for.compute(btxt,var=var)
-    ck$hint.txt[length(ck$hint.txt)] <- hint.txt
-    test.txt = test.code.for.compute(btxt,var=var)
-    ck$test.txt[length(ck$test.txt)] <- test.txt
-    
-    te$sol.txt = c(te$sol.txt, te$block.txt)
+    add.te.compute(te,ck,var)
   } else if (type == "hint") {
     #browser()
     ck$hint.txt[length(ck$hint.txt)] <- btxt
@@ -515,6 +520,39 @@ add.te.code = function(te,ck) {
     }
   }  
 } 
+
+# Add a compute block to te
+add.te.compute = function(te,ck,var) {
+  restore.point("add.te.compute")
+      
+  hint.txt = hint.code.for.compute(te$block.txt,var=var)
+  test.txt = test.code.for.compute(te$block.txt,var=var)
+
+  ck$test.txt = c(ck$test.txt,test.txt)
+  ck$hint.txt = c(ck$hint.txt,hint.txt)
+  ck$sol.txt = c(ck$sol.txt, te$block.txt)
+
+  ret = tryCatch(parse.text.with.source(te$block.txt),
+    error = function(e) {
+      e.str = paste0(as.character(e), collapse="\n")
+      str = paste0(" when parsing your code",te$chunk.str," between rows ", te$block.start, "-", te$block.end, ":\n ", str.right.of(e.str,":"))
+      stop(str, call.=FALSE)
+  })
+  e.li = list(ret$expr)
+  e.source.li = list(ret$source)
+
+  te$counter = te$counter+length(e.li)
+  ck$e.li = c(ck$e.li, e.li)
+  ck$e.source.li  = c(ck$e.source.li, e.source.li)
+  te$last.e = e.li[[length(e.li)]]
+
+  enter.code.str =  "\n# enter your code here ...\n"
+  enter.code.str =  ""
+  if (!identical(te$task.txt[length(te$task.txt)], enter.code.str)) {
+    ck$task.txt = c(ck$task.txt, enter.code.str)
+  }
+} 
+
 
 add.te.settings = function(te) {
   
@@ -649,12 +687,16 @@ test.code.for.compute = function(code, var, extra.arg="") {
 hint.code.for.compute = function(code, var, extra.code = NULL) {
   restore.point("hint.code.for.compute")
   ec = parse.expr.and.comments(code, comment.start="## ") 
-  comments = lapply(ec$comments, function(str) gsub('"',"'",str, fixed=TRUE))
+  comments = lapply(ec$comments, function(str) {
+    ret=gsub('"',"'",str, fixed=TRUE)
+    if (length(ret)==0)
+      ret=""
+  })
   comment.code = paste0("list(",paste0('"',comments,'"', collapse=", "),")")
   
   code = paste0(code, collapse="\n")
   com = paste0("hint.for.compute({\n",code,"\n},",comment.code,", var= '",var,"'",
-               extra.code,"\n})")
+               extra.code,"\n)")
   com  
 }
 

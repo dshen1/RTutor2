@@ -494,14 +494,20 @@ get.stud.chunk.code = function(txt = ps$stud.code,chunks = ps$cdt$chunk.name, ps
   chunk.end   = setdiff(which(str.starts.with(txt,"```")), chunk.start)
   chunk.end = remove.verbatim.end.chunks(chunk.start,chunk.end)
 
+  # remove all chunks that have no name (initial include chunk)
+  chunk.name = str.between(txt[chunk.start],'"','"', not.found=NA)
+
+  na.chunks  = is.na(chunk.name)
+  chunk.start= chunk.start[!na.chunks]
+  chunk.end  = chunk.end[!na.chunks]
+  chunk.name = chunk.name[!na.chunks]
   
   chunk.txt = sapply(seq_along(chunk.start), function (i) {
       code = txt[(chunk.start[i]+1):(chunk.end[i]-1)]
       paste0(code, collapse="\n")
   })
-  chunk.name = str.between(txt[chunk.start],'"','"', not.found=NA)
-  names(chunk.txt) = chunk.name
   
+  names(chunk.txt) = chunk.name
   chunk.txt = chunk.txt[chunk.name %in% chunks]
   
   if (!identical(names(chunk.txt), chunks)) {
