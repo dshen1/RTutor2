@@ -669,7 +669,7 @@ make.rtutor.ui = function(shiny.dt = ps$shiny.dt,cdt=ps$cdt, ps=get.ps()) {
   dataExplorerPanel = tabPanel("Data Explorer",value="dataExplorerTabPanel", data.explorer.ui())
   doc = do.call("tabsetPanel", c(ex.li,list(dataExplorerPanel), list(id="exTabsetPanel")))
   
-  ret = navbarPage("RTutor",
+  ret = navbarPage("RTutor", header=
     tags$head(
       tags$script(src = 'http://yandex.st/highlightjs/7.3/highlight.min.js', type = 'text/javascript'),
       tags$script(src = 'http://yandex.st/highlightjs/7.3/languages/r.min.js', type = 'text/javascript'),

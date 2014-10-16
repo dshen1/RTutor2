@@ -362,6 +362,8 @@ import.var.into.stud.env = function(import.var, dest.env, ps = get.ps()) {
 }
 
 can.chunk.be.edited = function(chunk.ind, ps = get.ps()) {
+  restore.point("can.chunk.be.edited")
+  
   ck = ps$cdt[chunk.ind,]
   ex.ind = ck$ex.ind
   if (ck$chunk.ex.ind == 1) {
@@ -371,11 +373,13 @@ can.chunk.be.edited = function(chunk.ind, ps = get.ps()) {
     if (is.null(ex.names))
       return(TRUE)
     edt = ps$edt
-    ex.inds = edt$ex.inds[match(ex.names,edt$ex.name)]
-    solved = sapply(ex.inds, function(ex.ind) !is.null(edt$ex.final.env[[ex.ind]]))
+    ex.inds = edt$ex.ind[match(ex.names,edt$ex.name)]
+    
+    chunks = which(ps$cdt$ex.ind %in% ex.inds)
+    solved = all(ps$cdt$is.solved[chunks])
     if (all(solved))
       return(TRUE)
-    ps$failure.message = paste0("You must first solve and check all chunks in exercise(s) ", paste0(ex.names[!solved],collapse=", "), " before you can start this exercise.")
+    ps$failure.message = paste0("You must first solve and check all chunks in exercise(s) ", paste0(ex.names[ex.inds],collapse=", "), " before you can start this exercise.")
     return(FALSE)
   } else {
     if (ps$cdt$is.solved[chunk.ind-1]) {
@@ -430,6 +434,8 @@ stepwise.eval.stud.expr = function(stud.expr, ps=get.ps(), stud.env = ps$stud.en
   if (!is.null(seed))
     set.seed(seed)
   has.error = FALSE
+  
+  i = 1
   for (i in seq_along(stud.expr)) {
     part.expr = stud.expr[[i]]
     tryCatch( eval(part.expr, stud.env),
