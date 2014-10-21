@@ -614,6 +614,15 @@ check.col = function(df,col, expr=NULL, class.df = c("data.frame","data.table","
 }
 
 
+check.var.exists = function(var, ps=get.ps(),stud.env = ps$stud.env) {
+  if (!exists(var,stud.env, inherits=FALSE)) {
+      msg = paste0("You have not yet generated the variable '", var,"'.")
+      add.failure(msg, var = var)
+      return(FALSE)
+  }
+  return(TRUE)  
+}
+
 #' Test: Check whether a variable is equal to a specified expression 
 #' @param var a the variable name as string
 #' @param expr an expression that will be evaluated in the student environment and returns the variable

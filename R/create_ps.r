@@ -524,7 +524,6 @@ add.te.code = function(te,ck) {
 # Add a compute block to te
 add.te.compute = function(te,ck,var) {
   restore.point("add.te.compute")
-      
   hint.txt = hint.code.for.compute(te$block.txt,var=var)
   test.txt = test.code.for.compute(te$block.txt,var=var)
 
@@ -691,6 +690,7 @@ hint.code.for.compute = function(code, var, extra.code = NULL) {
     ret=gsub('"',"'",str, fixed=TRUE)
     if (length(ret)==0)
       ret=""
+    ret
   })
   comment.code = paste0("list(",paste0('"',comments,'"', collapse=", "),")")
   

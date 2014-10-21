@@ -287,7 +287,7 @@ hint.for.call = function(call, ps=get.ps(), env = ps$stud.env, stud.expr.li = ps
   }  else if (cde$type == "math") {
     restore.point("math.fail")
     hint.str = scramble.text(deparse(call),"?",0.5, keep.char=" ")
-    display("You have to a correct formula... Here is a scrambled version of my solution with some characters being hidden by ?:\n\n  ", hint.str)
+    display("You have to enter a correct formula... Here is a scrambled version of my solution with some characters being hidden by ?:\n\n  ", hint.str)
   }  else if (cde$type == "var") {
     if (!from.assign)
       display("You shall simply show the variable ",cde$na, " by typing the variable name in your code.")
@@ -349,15 +349,24 @@ hint.for.compute = function(expr, hints.txt=NULL,var="", ps=get.ps(), env = ps$s
   expr.li = as.list(expr[-1])
   i = 1
   if (length(expr.li)>1) {
-    display("One can compute ", var, " in different ways: hint() will guide you through the ", length(expr.li), " steps used in the sample solution.")
+    display("You can compute ", var, " in different ways: hint() will guide you through the ", length(expr.li), " steps used in the sample solution.")
   }
-  
+  i=1
   for (i in seq_along(expr.li)) {
     e = expr.li[[i]]
     ret = FALSE
     if (!is.null(hints.txt[[i]])) {
-      display(i,". ",hints.txt[[i]])
+      display("Step ", i,". ",hints.txt[[i]])
     }
+    
+    var = deparse1(e[[2]],collapse="\n")
+    exists = check.var.exists(var)
+    if (!exists) {
+      break
+    }
+    
+    
+    
     tryCatch(ret <-  check.assign(call.object = e),
       error = function(e) {ex$failure.message <- as.character(e)}
     )
@@ -371,7 +380,7 @@ hint.for.compute = function(expr, hints.txt=NULL,var="", ps=get.ps(), env = ps$s
       display(message)      
     }
   }
-  if (ret==FALSE & i < length(expr.li)) {
+  if (ret==FALSE & i < length(expr.li) & !isTRUE(ps$is.shiny)) {
     display("Note: If you have finished this step and want a hint for the next step. Check your problem set with Ctrl-Alt-R before you type hint() again.")
   }
 }

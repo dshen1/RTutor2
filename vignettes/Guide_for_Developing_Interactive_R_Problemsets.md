@@ -1,8 +1,3 @@
----
-output:
-  html_document:
-    toc: yes
----
 
 Tutorial for Developing Interactive R Problem Sets with RTutor
 !!! Version for RTutor2 - Preliminary !!!

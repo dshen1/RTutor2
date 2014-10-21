@@ -74,7 +74,7 @@ data.explorer.server = function() {
       fun = input$funSelectInput
       fun = paste0("x",fun)
       print(fun)
-      out = xsummarise_each_q(dat,funs_q(fun), cols)
+      out = xsummarise_each_(dat,funs(fun), cols)
       out
      }, options = list(aLengthMenu = c(5, 10, 25,50,100),iDisplayLength = 25))
 

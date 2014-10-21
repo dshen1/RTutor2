@@ -30,7 +30,9 @@ examples.show.shiny.ps = function() {
 
 init.shiny.ps = function(ps.name,dir=getwd(), user.name="Seb",  sav.file=NULL, load.sav = !is.null(sav.file), ex.inds =NULL, sample.solution=FALSE, is.solved=load.sav, import.rmd=FALSE, rmd.file = paste0(ps.name,"_",user.name,"_export.rmd")) {
   restore.point("init.shiny.ps")
+  setwd(dir)
   ps = init.ps(ps.name,dir)
+  ps$is.shiny = TRUE
   ps$shiny.ex.inds = ex.inds
   ps$shiny.dt = ps$rps$shiny.dt 
   ps$chunk.ind = 0
@@ -46,17 +48,25 @@ init.shiny.ps = function(ps.name,dir=getwd(), user.name="Seb",  sav.file=NULL, l
   ps$cdt$has.ui.renderer = rep(FALSE,n)
   ps$cdt$server = replicate(n, expression(), simplify=FALSE)
   
+  for (chunk.ind in ps$cdt$chunk.ps.ind) {
+    id = paste0("r.chunk_",chunk.ind,".ui.mode")
+    ps[[id]] = reactiveValues(counter=0)
+    # r.chunk.ui.mode = reactiveValues(counter=0)
+  }
+  
+  
   if (sample.solution & !ps$rps$has.sol) {
     warning("I cannot show the sample solution, since the sample solution was not made available for the problem set.")
     sample.solution = FALSE
   }
   ps$cdt$is.solved = rep(FALSE,n)  
 
+  if (is.null(sav.file)) {
+    sav.file = paste0(user.name, "_", ps.name,".sav")
+  }
+  ps$sav.file = sav.file
   if (load.sav) {
-    if (is.null(sav.file)) {
-      sav.file = paste0(dir,"/",user.name, "_", ps.name,".sav")
-    }
-    sav = load.sav(sav.file)
+    sav = load.sav(ps$sav.file)
     ps$cdt$mode = sav$mode
     ps$cdt$stud.code = sav$stud.code
     if (is.solved) {
@@ -383,19 +393,19 @@ create.chunk.ui.renderer = function(chunk.ind, env = parent.frame, ps = get.ps()
   ))
   
   expr = substitute(env=li, expr= {  
-    # chunkUI
-    r.chunk.ui.mode = reactiveValues(counter=0)
+   # chunkUI
+   #r.chunk.ui.mode = reactiveValues(counter=0)
     
    observe({
       if (has.counter.increased(hideBtn, input[[hideBtn]])) {
         ps$cdt$mode[[chunk.ind]] = "hidden"
-        r.chunk.ui.mode$counter=isolate(r.chunk.ui.mode$counter+1)
+        ps$r.chunk.ui.mode$counter=isolate(ps$r.chunk.ui.mode$counter+1)
       }
     }) 
     observe({
       if (has.counter.increased(hideCodeBtn, input[[hideCodeBtn]])) {
         ps$cdt$mode[[chunk.ind]] = "hide.code"
-        r.chunk.ui.mode$counter=isolate(r.chunk.ui.mode$counter+1)
+        ps$r.chunk.ui.mode$counter=isolate(ps$r.chunk.ui.mode$counter+1)
       }
     }) 
 
@@ -404,7 +414,7 @@ create.chunk.ui.renderer = function(chunk.ind, env = parent.frame, ps = get.ps()
         ps = get.ps()
         if (can.chunk.be.edited(chunk.ind)) {
           ps$cdt$mode[[chunk.ind]] = "input"
-          r.chunk.ui.mode$counter=isolate(r.chunk.ui.mode$counter+1)
+          ps$r.chunk.ui.mode$counter=isolate(ps$r.chunk.ui.mode$counter+1)
         } else {
           #restore.point("nkjgnkjgndhfu")
           createAlert(session,inputId = alertOut, 
@@ -420,14 +430,16 @@ create.chunk.ui.renderer = function(chunk.ind, env = parent.frame, ps = get.ps()
       if (has.counter.increased(outputBtn, input[[outputBtn]])) {
         ps = get.ps()
         ps$cdt$mode[[chunk.ind]] = "output"
-        r.chunk.ui.mode$counter=isolate(r.chunk.ui.mode$counter+1)
+        ps$r.chunk.ui.mode$counter=isolate(ps$r.chunk.ui.mode$counter+1)
       }
     })
  
     
     output[[chunkUI]] <- renderUI({
+      cat("chunk_renderUI")
+      
       restore.point(paste0("chunk_renderUI"))
-      counter = r.chunk.ui.mode$counter
+      counter = ps$r.chunk.ui.mode$counter
       ps = get.ps()
       mode = ps$cdt$mode[[chunk.ind]]
       if (counter==0 | 
@@ -463,6 +475,12 @@ create.chunk.ui.renderer = function(chunk.ind, env = parent.frame, ps = get.ps()
       if (has.counter.increased(saveBtn,input$saveBtn)) {
         key.observer(saveBtn, chunk.ind,input,session, shiny.env,r=NA,reload.env=FALSE)
         save.sav()
+        createAlert(session,inputId = alertOut, 
+          title = paste0("Saved as ", ps$sav.file), 
+          message= "",
+          type = "info", append=FALSE
+        )
+
       }
     }) 
 
@@ -547,7 +565,7 @@ create.chunk.input.observer = function(chunk.ind, env=parent.frame(), ps=get.ps(
         if (isTRUE(ret)) {
            ps = get.ps()
            ps$cdt$mode[[chunk.ind]]="output"
-           r.chunk.ui.mode$counter=isolate(r.chunk.ui.mode$counter+1)
+           ps$r.chunk.ui.mode$counter=isolate(ps$r.chunk.ui.mode$counter+1)
          }
       }      
     }) 
@@ -559,7 +577,7 @@ create.chunk.input.observer = function(chunk.ind, env=parent.frame(), ps=get.ps(
          if (isTRUE(ret)) {
            ps = get.ps()
            ps$cdt$mode[[chunk.ind]]="output"
-           r.chunk.ui.mode$counter=isolate(r.chunk.ui.mode$counter+1)
+           ps$r.chunk.ui.mode$counter=isolate(ps$r.chunk.ui.mode$counter+1)
 
          }
       }
@@ -666,8 +684,11 @@ make.rtutor.ui = function(shiny.dt = ps$shiny.dt,cdt=ps$cdt, ps=get.ps()) {
   })
   ex.li[[1]]
   #ui.li = do.call("c",ui.li)
+  
   dataExplorerPanel = tabPanel("Data Explorer",value="dataExplorerTabPanel", data.explorer.ui())
-  doc = do.call("tabsetPanel", c(ex.li,list(dataExplorerPanel), list(id="exTabsetPanel")))
+  loadSavePanel = tabPanel("File",value="loadSaveTabPanel", load.save.ui())
+  
+  doc = do.call("tabsetPanel", c(ex.li,list(dataExplorerPanel,loadSavePanel), list(id="exTabsetPanel")))
   
   ret = navbarPage("RTutor", header=
     tags$head(
@@ -721,6 +742,10 @@ make.rtutor.server = function(cdt=ps$cdt, ps=get.ps()) {
   view.server.li = lapply(view.inds, function(view.ind) {
     ca = substitute(
       env=list(.view.ind=view.ind, viewUI=paste0("viewUI",view.ind), view.created=as.name(paste0("view.created.",view.ind))),{
+      
+      load.save.observer()
+        
+        
       view.created = reactiveValues(counter=0)  
         
       output[[viewUI]] <- renderUI({
@@ -961,32 +986,6 @@ is.last.chunk.of.ex = function(chunk.ind, ps=get.ps()) {
   chunk.ind == max(which(ps$cdt$ex.ind==ex.ind))
 }
 
-save.sav = function(user.name=get.user()$name,ps=get.ps(), copy.into.global=TRUE) {
-  restore.point("save.sav")
-  sav = list(
-    ps.name = ps$name,
-    user.name = user.name,
-    stud.code = ps$cdt$stud.code,
-    mode = ps$cdt$mode,
-    is.solved = ps$cdt$is.solved
-  )
-  file = paste0(user.name,"_",ps$name,".sav")
-  save(sav, file=file)
-  
-  copy.into.env(source=ps$stud.env, dest=globalenv())
-}
-
-load.sav = function(file =paste0(user.name,"_",ps.name,".sav"), user.name=get.user()$name,ps.name = ps$name, ps=get.ps()) {
-  restore.point("load.sav")
-
-  if (is.null(file))
-    return(NULL)
-  if (!file.exists(file))
-    return(NULL)
-  load(file)
-  return(sav)
-}
-
 rerun.solved.chunks = function(ps = get.ps()) {
   inds = which(ps$cdt$is.solved)
   ok = TRUE
@@ -1026,8 +1025,6 @@ rerun.solved.chunks = function(ps = get.ps()) {
   } 
 }
  
-
-
 
 chunk.to.html = function(txt, chunk.ind, name=paste0("out_",ps$cdt$nali[[chunk.ind]]$name), ps = get.ps(), eval=TRUE, success.message=isTRUE(ps$cdt$is.solved[[chunk.ind]]), echo=TRUE, nali=NULL) {
   restore.point("chunk.to.html")
