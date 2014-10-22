@@ -195,10 +195,9 @@ nlist = function (...)
 
 #' Displays the given text
 #' @export
-display = function (..., collapse = "\n", sep = "") 
+display = function (..., collapse = "\n", sep = "", start.char="\n",end.char="\n") 
 {
-    str = paste("\n", paste(..., collapse = collapse, sep = sep), 
-        "\n", sep = "")
+    str = paste(start.char, paste(..., collapse = collapse, sep = sep), end.char, sep = "")
     invisible(cat(str))
 }
 

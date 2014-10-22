@@ -578,7 +578,17 @@ create.chunk.input.observer = function(chunk.ind, env=parent.frame(), ps=get.ps(
            ps = get.ps()
            ps$cdt$mode[[chunk.ind]]="output"
            ps$r.chunk.ui.mode$counter=isolate(ps$r.chunk.ui.mode$counter+1)
-
+           
+           # set the next chunk to edit mode
+           if (chunk.ind < NROW(ps$cdt)) {
+             if (ps$cdt$ex.ind[chunk.ind] == ps$cdt$ex.ind[chunk.ind+1] &
+                 !ps$cdt$is.solved[chunk.ind+1]) {
+              
+                cat("update next chunk...")
+                ps$cdt$mode[chunk.ind+1] = "input"
+                update.chunk(chunk.ind+1)
+             }
+           }
          }
       }
     }) 
@@ -948,8 +958,9 @@ restore.chunk.task = function(ps=get.ps()) {
 
 hint.shiny.chunk = function(ps=get.ps()) {
   restore.point("hint.shiny.chunk")
-  txt = tryCatch(merge.lines(c("Hint:",capture.output(hint(ps=ps)))),
-         error = function(e) {merge.linesas.character(e)})         
+  txt = tryCatch(merge.lines(capture.output(hint(ps=ps))),
+         error = function(e) {merge.linesas.character(e)})
+  txt = paste0("Hint: ", txt)
   updateAceEditor(ps$session, ps$nali$console, value=txt, mode="text")
 }
   
