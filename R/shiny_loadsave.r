@@ -24,6 +24,13 @@ load.save.ui = function(ps=get.ps()) {
       textInput('saveFileInput',"",value=ps$sav.file),
       helpText(paste0('(file name must end with "',file.end,'")')),
       bsAlert("saveAsAlert")
+    ),
+    fluidRow(
+      bsActionButton("exportBtn","Export to Rmd"),
+      bsActionButton("importBtn","Import from Rmd"),
+      textInput('exportFileInput',"",value=paste0("exported_",get.user()$name,"_",ps$name,".Rmd")),
+      helpText(paste0('(file name must end with ".Rmd")')),
+      bsAlert("exportAlert")
     )
   )
 }
@@ -84,7 +91,44 @@ load.save.observer = function(server.env = parent.frame()) {
         }
       }
     }) 
-       
+
+   
+    # export button
+    observe({
+      if (has.counter.increased("exportBtn",input$exportBtn)) {
+        rmd.file = isolate(input$exportFileInput)
+        export.solution(rmd.file)
+        createAlert(session,inputId = "exportAlert", 
+          title = paste0("Exported to ", rmd.file), 
+          message= "",
+          type = "info", append=FALSE
+        )
+      }
+    })
+   
+    # import button
+    observe({
+      if (has.counter.increased("importBtn",input$importBtn)) {
+        rmd.file = isolate(input$exportFileInput)
+        ok = import.from.rmd(rmd.file)
+        if (ok) {
+          update.all.chunks()
+          createAlert(session,inputId = "exportAlert", 
+            title = paste0("Imported solution from ", rmd.file), 
+            message= "",
+            type = "info", append=FALSE
+          )
+        } else {
+          ps = get.ps()
+          createAlert(session,inputId = "exportAlert", 
+            title = paste0("Import failed"), 
+            message= ps$failure.message,
+            type = "warning", append=FALSE
+          )          
+        }
+      }
+    })  
+
   })
   eval(expr,server.env)
 }
@@ -159,3 +203,80 @@ update.all.chunks = function(ps=get.ps()) {
     update.chunk(chunk.ind, ps)  
   }
 } 
+
+
+export.solution = function(rmd.file =paste0(ps$name,"_",user.name,"_export.rmd"),user.name=get.user()$name, ps=get.ps(), copy.into.global=TRUE,...) {
+  restore.point("export.solution")
+
+  export.to.rmd(rmd.file)
+  if (copy.into.global)
+    copy.into.env(source=ps$stud.env, dest=globalenv())
+  return(rmd.file)
+}
+
+
+
+export.to.rmd = function(rmd.file =paste0(ps$name,"_",user.name,"_export.rmd"),dir = getwd(), ps=get.ps(), user.name=get.user()$name) {
+  restore.point("export.to.rmd")
+  cdt = ps$cdt
+  rps = ps$rps
+  
+  txt = rps$empty.rmd.txt
+
+  cl = rps$empty.rmd.chunk.lines
+  rownames(cl) = cl$chunk.name
+  chunks = intersect(cdt$chunk.name, cl$chunk.name)
+  
+  cl.ind = match(chunks, cl$chunk.name)
+  cdt.ind = match(chunks, cdt$chunk.name)
+  stud.code = cdt$stud.code[cdt.ind]
+  start.lines = cl$start.line[cl.ind]
+  clear.lines = do.call("c",lapply(cl.ind, function(i) int.seq(cl$start.line[i]+1,cl$end.line[i]-1)))
+  
+  txt[rps$empty.rmd.user.name.line] = paste0("user.name = '", user.name,"'")
+  txt[rps$empty.rmd.ps.dir.line] = paste0("ps.dir = '", dir,"'")
+  txt[rps$empty.rmd.ps.file.line] = paste0("ps.file = '", rmd.file,"'")
+  
+  txt[start.lines] = paste0(txt[start.lines],"\n",stud.code)
+  if (length(clear.lines)>0)
+    txt = txt[-clear.lines]
+  
+  writeLines(txt, rmd.file)
+
+}
+
+import.from.rmd = function(rmd.file, ps = get.ps()) {
+
+  stud.code <- import.stud.code.from.rmd(rmd.file, ps = ps)
+
+  if (length(stud.code) != length(ps$cdt$stud.code)) {
+    ps$failure.message=paste0("The file ", rmd.file, " has a different number of chunks than the current problem set.")
+    return(FALSE)
+  }
+
+  ps$cdt$stud.code = stud.code
+  ps$cdt$mode = "output"
+  ps$cdt$is.solved = FALSE
+  
+  return(TRUE)
+}
+
+import.stud.code.from.rmd = function(rmd.file, ps = get.ps()) {
+  #rmd.file = "Example_Seb_export.rmd"
+  restore.point("import.from.rmd")
+  txt = readLines(rmd.file)
+  
+  cl = get.chunk.lines(txt)
+  rps = ps$rps
+  
+  chunks = intersect(ps$cdt$chunk.name, cl$chunk.name)
+  cl.ind = match(chunks, cl$chunk.name)
+  cdt.ind = match(chunks, ps$cdt$chunk.name)
+
+  import.code = sapply(cl.ind, function(i) {
+    paste0(txt[int.seq(cl$start.line[i]+1,cl$end.line[i]-1)], collapse="\n")
+  })
+  stud.code = ps$cdt$stud.code
+  stud.code[cdt.ind] = import.code
+  stud.code
+}

@@ -93,6 +93,8 @@ init.shiny.ps = function(ps.name,dir=getwd(), user.name="Seb",  sav.file=NULL, l
   
 }
 
+
+
 #' Run a problem set in the webbroser (or in the viewer pane).
 #' 
 #' ... contains parameters specified in init.shiny.ps. They are explained here.
@@ -103,7 +105,7 @@ init.shiny.ps = function(ps.name,dir=getwd(), user.name="Seb",  sav.file=NULL, l
 #' @param import.rmd shall the solution be imported from the rmd file specificed in the argument rmd.file
 #' @param lauch.browser if TRUE (default) show the problem set in the browser. Otherwise it is shown in the RStudio viewer pane
 #' @param catch.errors by default TRUE only set FALSE for debugging purposes in order to get a more informative traceback()
-show.shiny.ps = function(ps.name, user.name="Seb", sav.file=NULL, load.sav = !is.null(sav.file), sample.solution=FALSE, is.solved=load.sav, import.rmd=FALSE, rmd.file = paste0(ps.name,"_",user.name,"_export.rmd"), launch.browser=TRUE, catch.errors = TRUE, ...) {
+show.ps = function(ps.name, user.name="Seb", sav.file=NULL, load.sav = !is.null(sav.file), sample.solution=FALSE, is.solved=load.sav, import.rmd=FALSE, rmd.file = paste0(ps.name,"_",user.name,"_export.rmd"), launch.browser=TRUE, catch.errors = TRUE, ...) {
   library(restorepoint)
 
   ps = init.shiny.ps(ps.name=ps.name, user.name=user.name,sav.file=sav.file, load.sav=load.sav, sample.solution=sample.solution, import.rmd=import.rmd, rmd.file=rmd.file, ...)
@@ -131,6 +133,8 @@ show.shiny.ps = function(ps.name, user.name="Seb", sav.file=NULL, load.sav = !is
   
 }
 
+show.shiny.ps = show.ps
+
 make.chunk.nali = function(chunk.name, chunk.ind=which(ps$cdt$chunk.name==chunk.name), ps = get.ps()) {
   restore.point("make.chunk.nali")
   name = gsub(" ","_",chunk.name,fixed=TRUE)
@@ -142,7 +146,7 @@ make.chunk.nali = function(chunk.name, chunk.ind=which(ps$cdt$chunk.name==chunk.
     "chunkUI", "editor","console","chunkout",
     "runLineKey","runKey","checkKey","hintKey","helpKey",
     "runLineBtn","runBtn","checkBtn","hintBtn","helpBtn","dataBtn",
-    "outputBtn","hideBtn","hideCodeBtn", "restoreBtn", "saveBtn", "exportBtn",
+    "outputBtn","hideBtn","hideCodeBtn", "restoreBtn", "saveBtn", 
     "editBtn","labelBtn","alertOut",
     "inputPanel","outputPanel"
 
@@ -226,7 +230,6 @@ make.chunk.input.ui = function(chunk.ind, theme="textmate", height=NULL, code.li
     bsActionButton(nali$dataBtn, "data", size="mini"),
     bsActionButton(nali$restoreBtn, "restore", size="mini"),
     bsActionButton(nali$saveBtn, "save", size="mini"),
-    bsActionButton(nali$exportBtn, "export", size="mini"),
 
     bsActionButton(nali$labelBtn, label,size="mini")
 
@@ -254,8 +257,7 @@ make.chunk.output.ui = function(chunk.ind, ps = get.ps()) {
     bsActionButton(nali$hideBtn, "hide",size="mini"),
     bsActionButton(nali$hideCodeBtn, "hide code",size="mini"),    
     bsActionButton(nali$dataBtn, "data", size="mini"),
-    bsActionButton(nali$saveBtn, "save", size="mini"),
-    bsActionButton(nali$exportBtn, "export", size="mini")
+    bsActionButton(nali$saveBtn, "save", size="mini")
 
   ) 
   is.solved = ps$cdt$is.solved[[chunk.ind]]
@@ -289,8 +291,7 @@ make.chunk.hide.code.ui = function(chunk.ind, ps = get.ps()) {
     bsActionButton(nali$hideBtn, "hide all",size="mini"),
     bsActionButton(nali$editBtn, "edit",size="mini"),
     bsActionButton(nali$dataBtn, "data", size="mini"),
-    bsActionButton(nali$saveBtn, "save", size="mini"),
-    bsActionButton(nali$exportBtn, "export", size="mini")
+    bsActionButton(nali$saveBtn, "save", size="mini")
   )
   is.solved = ps$cdt$is.solved[[chunk.ind]]
   if (is.solved) {
@@ -317,9 +318,7 @@ make.chunk.hidden.ui = function(chunk.ind, ps = get.ps()) {
     bsActionButton(nali$outputBtn, "hidden: show output",size="mini"),
     bsActionButton(nali$editBtn, "edit",size="mini"),
     bsActionButton(nali$dataBtn, "data", size="mini"),
-    bsActionButton(nali$saveBtn, "save", size="mini"),
-    bsActionButton(nali$exportBtn, "export", size="mini")
-
+    bsActionButton(nali$saveBtn, "save", size="mini")
   ) 
   fluidRow(
     button.row,
@@ -481,19 +480,6 @@ create.chunk.ui.renderer = function(chunk.ind, env = parent.frame, ps = get.ps()
           type = "info", append=FALSE
         )
 
-      }
-    }) 
-
-    # export button (in input & output ui)
-    observe({
-      if (has.counter.increased(exportBtn,input$exportBtn)) {
-        key.observer(exportBtn, chunk.ind,input,session, shiny.env,r=NA,reload.env=FALSE)
-        rmd.file = export.solution()
-        createAlert(session,inputId = alertOut, 
-          title = paste0("Exported to ", rmd.file), 
-          message= "",
-          type = "info", append=FALSE
-        )
       }
     }) 
 
@@ -1104,64 +1090,3 @@ default.out.chunk.options = function() {
 }
 
 
-
-export.solution = function(...,user.name=get.user()$name, ps=get.ps(), copy.into.global=TRUE) {
-  restore.point("export.solution")
-  rmd.file =paste0(ps$name,"_",user.name,"_export.rmd")
-  export.to.rmd(rmd.file)
-  if (copy.into.global)
-    copy.into.env(source=ps$stud.env, dest=globalenv())
-  return(rmd.file)
-}
-
-
-
-export.to.rmd = function(rmd.file =paste0(ps$name,"_",user.name,"_export.rmd"),dir = getwd(), ps=get.ps(), user.name=get.user()$name) {
-  restore.point("export.to.rmd")
-  cdt = ps$cdt
-  rps = ps$rps
-  
-  txt = rps$empty.rmd.txt
-
-  cl = rps$empty.rmd.chunk.lines
-  rownames(cl) = cl$chunk.name
-  chunks = intersect(cdt$chunk.name, cl$chunk.name)
-  
-  cl.ind = match(chunks, cl$chunk.name)
-  cdt.ind = match(chunks, cdt$chunk.name)
-  stud.code = cdt$stud.code[cdt.ind]
-  start.lines = cl$start.line[cl.ind]
-  clear.lines = do.call("c",lapply(cl.ind, function(i) int.seq(cl$start.line[i]+1,cl$end.line[i]-1)))
-  
-  txt[rps$empty.rmd.user.name.line] = paste0("user.name = '", user.name,"'")
-  txt[rps$empty.rmd.ps.dir.line] = paste0("ps.dir = '", dir,"'")
-  txt[rps$empty.rmd.ps.file.line] = paste0("ps.file = '", rmd.file,"'")
-  
-  txt[start.lines] = paste0(txt[start.lines],"\n",stud.code)
-  if (length(clear.lines)>0)
-    txt = txt[-clear.lines]
-  
-  writeLines(txt, rmd.file)
-
-}
-
-import.stud.code.from.rmd = function(rmd.file, ps = get.ps()) {
-  #rmd.file = "Example_Seb_export.rmd"
-  restore.point("import.from.rmd")
-  txt = readLines(rmd.file)
-  
-  cl = get.chunk.lines(txt)
-  rps = ps$rps
-  
-  chunks = intersect(ps$cdt$chunk.name, cl$chunk.name)
-  cl.ind = match(chunks, cl$chunk.name)
-  cdt.ind = match(chunks, ps$cdt$chunk.name)
-
-  
-  import.code = sapply(cl.ind, function(i) {
-    paste0(txt[int.seq(cl$start.line[i]+1,cl$end.line[i]-1)], collapse="\n")
-  })
-  stud.code = ps$cdt$stud.code
-  stud.code[cdt.ind] = import.code
-  stud.code
-}
